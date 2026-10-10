@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FixFlow — Apartment Maintenance OS</title>
+  <meta name="description" content="Working UX prototype for apartment maintenance reporting, tracking, and accountability." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:ital,wght@0,600;1,600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Interactive Background (Canvas & Cursor Follower, No Tint Blobs) -->
+  <div id="ambient-bg">
+    <canvas id="bg-canvas"></canvas>
+    <div id="cursor-glow"></div>
+  </div>
+
+  <div class="app-shell" id="appShell">
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-left">
+          <div class="brand-mark">F</div>
+          <div>
+            <strong>FixFlow</strong>
+            <span>Maintenance OS</span>
+          </div>
+        </div>
+        <!-- Sidebar Close / Collapse Button -->
+        <button class="sidebar-toggle-btn" id="sidebarCloseBtn" title="Close / Collapse Sidebar" aria-label="Close sidebar">✕</button>
+      </div>
+
+      <!-- Role Switcher -->
+      <div class="role-switcher">
+        <label for="roleSelect">View as</label>
+        <select id="roleSelect">
+          <option value="resident" selected>Resident · Aarav Mehta</option>
+          <option value="staff">Maintenance Staff · Suresh / Rajesh</option>
+          <option value="manager">Society Manager · Priya Sharma</option>
+        </select>
+      </div>
+
+      <!-- Sidebar Navigation -->
+      <nav class="nav" aria-label="Primary">
+        <button class="nav-item active" data-view="dashboard">
+          <span>⌂</span> Dashboard
+        </button>
+        <button class="nav-item" data-view="tickets">
+          <span>✓</span> <span id="navTicketsLabel">My Requests</span> <b id="navCount">0</b>
+        </button>
+        <button class="nav-item" data-view="activity">
+          <span>↻</span> Activity Trail
+        </button>
+        <a href="../index.html" class="nav-item back-study-link" style="text-decoration:none; margin-top: 10px;">
+          <span>←</span> Case Study
+        </a>
+      </nav>
+
+      <!-- Sidebar Bottom Info -->
+      <div class="sidebar-bottom">
+        <div class="trust-card">
+          <div class="trust-icon">✓</div>
+          <div>
+            <strong>One clear trail</strong>
+            <p>Every request has an owner, status, and visible next action.</p>
+          </div>
+        </div>
+
+        <div class="user-mini">
+          <div class="avatar" id="sidebarAvatar">AM</div>
+          <div style="flex:1;">
+            <strong id="sidebarUserName">Aarav Mehta</strong>
+            <span id="sidebarUserRole">Unit 402 · Resident</span>
+          </div>
+          <button id="mobileMenuClose" class="icon-btn mobile-only" aria-label="Close menu">×</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN APP CANVAS -->
+    <main class="main">
+      <!-- TOPBAR -->
+      <header class="topbar">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <!-- Desktop & Mobile Sidebar Toggle -->
+          <button class="icon-btn sidebar-trigger-btn" id="openSidebar" title="Toggle Sidebar" aria-label="Toggle Sidebar">☰</button>
+          <div class="breadcrumb">
+            <span>Greenview Heights</span>
+            <i>/</i>
+            <strong id="pageTitle">Dashboard</strong>
+          </div>
+        </div>
+
+        <div class="top-actions">
+          <!-- Database Mode Pill -->
+          <div id="db-status" class="db-pill" title="Database status">
+            <span class="status-dot"></span>
+            <span id="db-status-text">Detecting DB...</span>
+          </div>
+
+          <!-- Background Design Selector -->
+          <div class="bg-style-pill" title="Switch Background Design">
+            <span style="font-size:12px;">🎨</span>
+            <select id="bgStyleSelect" aria-label="Background Design">
+              <option value="subtle-waves" selected>Subtle Waves</option>
+              <option value="subtle-grid">Delicate Grid</option>
+              <option value="subtle-mesh">Soft Constellation</option>
+              <option value="minimal">Minimal Aura</option>
+            </select>
+          </div>
+
+          <!-- Quick Database Controls -->
+          <button class="icon-btn animated-btn" id="btn-export-db" title="Export SQLite / LocalStorage Database as JSON">💾</button>
+          <button class="icon-btn animated-btn" id="btn-reset-db" title="Reset Database to Clean Sample State">↺</button>
+
+          <!-- Theme Toggle Button -->
+          <button id="theme-toggle" class="icon-btn animated-btn" title="Toggle Light/Dark Theme">🌙</button>
+
+          <!-- Notification Bell -->
+          <button class="notif-btn animated-btn" id="notifBtn" aria-label="Notifications" title="Live updates active">
+            🔔<span></span>
+          </button>
+
+          <!-- Top Profile Avatar -->
+          <button class="avatar top-avatar" id="topAvatar">AM</button>
+        </div>
+      </header>
+
+      <!-- MAIN VIEWS CONTAINER -->
+      <section class="content" id="appContent">
+
+        <!-- ============================================== -->
+        <!-- VIEW 1: DASHBOARD                              -->
+        <!-- ============================================== -->
+        <div class="view active" id="view-dashboard">
+          <div class="hero-row">
+            <div>
+              <p class="eyebrow" id="heroDate">SUNDAY · OCTOBER 4, 2026</p>
+              <h1 id="greeting">Good afternoon, Aarav.</h1>
+              <p class="subtle" id="heroSubtle">Report it once. Track it all the way to fixed.</p>
+            </div>
+            <button class="primary-btn" id="reportBtn"><span>＋</span> Report an issue</button>
+          </div>
+
+          <!-- Quick Stats Cards -->
+          <div class="stat-grid">
+            <button class="stat-card" data-filter="active">
+              <span class="stat-label">Active requests</span>
+              <strong id="statActive">0</strong>
+              <small>Needs attention</small>
+            </button>
+            <button class="stat-card" data-filter="progress">
+              <span class="stat-label">In progress</span>
+              <strong id="statProgress">0</strong>
+              <small>Being worked on</small>
+            </button>
+            <button class="stat-card" data-filter="resolved">
+              <span class="stat-label">Resolved</span>
+              <strong id="statResolved">0</strong>
+              <small>Completed</small>
+            </button>
+            <div class="stat-card eta-card">
+              <span class="stat-label">Next Scheduled Action</span>
+              <strong id="statNextAction">Today · 5:30 PM</strong>
+              <small id="statNextActionSub">Plumbing check · TKT-1001</small>
+            </div>
+          </div>
+
+          <!-- Two-Column Grid: Attention List & Live Update -->
+          <div class="dashboard-grid">
+            <!-- Left Panel: Requests in Motion -->
+            <section class="panel attention-panel">
+              <div class="panel-head">
+                <div>
+                  <span class="section-kicker">NEEDS ATTENTION</span>
+                  <h2>Requests in motion</h2>
+                </div>
+                <button class="text-btn" data-go="tickets">View all →</button>
+              </div>
+              <div id="attentionList" class="ticket-list">
+                <!-- Dynamically injected -->
+              </div>
+            </section>
+
+            <!-- Right Panel: Live Visibility Timeline -->
+            <section class="panel timeline-panel">
+              <div class="panel-head">
+                <div>
+                  <span class="section-kicker">LIVE VISIBILITY</span>
+                  <h2>Latest update</h2>
+                </div>
+                <span class="live-pill"><span></span> Live</span>
+              </div>
+
+              <div class="featured-update" id="featuredUpdateBox">
+                <div class="update-icon plumbing" id="featuredIcon">↯</div>
+                <div style="flex: 1;">
+                  <div class="update-top">
+                    <strong id="featuredTitle">Severe Bathroom Pipe Leakage</strong>
+                    <span id="featuredTime">12 min ago</span>
+                  </div>
+                  <p id="featuredAssignee">Assigned to <b>Suresh Patil · Plumbing</b></p>
+                  <div class="mini-progress"><span id="featuredProgress" style="width:68%"></span></div>
+                  <small id="featuredStatusText">Status: In Progress · Diagnosing leak</small>
+                </div>
+              </div>
+
+              <div class="timeline-mini" id="featuredMiniTimeline">
+                <div class="timeline-step done">
+                  <span>✓</span>
+                  <div><strong>Reported</strong><small>09:30 AM · Resident logged</small></div>
+                </div>
+                <div class="timeline-step done">
+                  <span>✓</span>
+                  <div><strong>Assigned</strong><small>10:15 AM · Suresh Patil</small></div>
+                </div>
+                <div class="timeline-step current">
+                  <span>●</span>
+                  <div><strong>In progress</strong><small>10:45 AM · Working in Unit 402</small></div>
+                </div>
+                <div class="timeline-step">
+                  <span>○</span>
+                  <div><strong>Resolved</strong><small>Pending completion</small></div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- Insight Strip -->
+          <section class="insight-strip">
+            <div class="insight-icon">💡</div>
+            <div>
+              <strong>No more chasing.</strong>
+              <span>Every request shows <b>what</b> happened, <b>who</b> owns it, and <b>what happens next</b>.</span>
+            </div>
+          </section>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- VIEW 2: REQUEST CENTER (TICKETS LIST)          -->
+        <!-- ============================================== -->
+        <div class="view" id="view-tickets">
+          <div class="hero-row compact">
+            <div>
+              <p class="eyebrow">REQUEST CENTER</p>
+              <h1>Maintenance requests</h1>
+              <p class="subtle">A single transparent place to report, track, and close the loop.</p>
+            </div>
+            <button class="primary-btn" id="reportBtn2"><span>＋</span> New request</button>
+          </div>
+
+          <div class="toolbar panel">
+            <div class="search-wrap">
+              <span>⌕</span>
+              <input id="searchInput" type="search" placeholder="Search requests, units, categories, or IDs…">
+            </div>
+
+            <div class="filters" id="filterButtons">
+              <button class="filter active" data-list-filter="all">All</button>
+              <button class="filter" data-list-filter="open">Open</button>
+              <button class="filter" data-list-filter="progress">In progress</button>
+              <button class="filter" data-list-filter="resolved">Resolved</button>
+            </div>
+          </div>
+
+          <section class="panel table-panel">
+            <div id="fullTicketList" class="full-ticket-list">
+              <!-- Dynamically injected -->
+            </div>
+          </section>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- VIEW 3: ACTIVITY / AUDIT TRAIL                 -->
+        <!-- ============================================== -->
+        <div class="view" id="view-activity">
+          <div class="hero-row compact">
+            <div>
+              <p class="eyebrow">AUDIT TRAIL</p>
+              <h1>Activity Log</h1>
+              <p class="subtle">Nothing disappears into a private WhatsApp chat. Full timestamped history.</p>
+            </div>
+          </div>
+          <section class="panel activity-panel" id="activityList">
+            <!-- Dynamically injected -->
+          </section>
+        </div>
+
+      </section>
+    </main>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODALS                                         -->
+  <!-- ============================================== -->
+
+  <!-- Universal Modal Backdrop -->
+  <div class="modal-backdrop" id="modalBackdrop" hidden>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button class="modal-close" id="modalClose" aria-label="Close">×</button>
+      <div id="modalContent"></div>
+    </section>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast" id="toast" role="status">
+    <span>✓</span>
+    <div>
+      <strong id="toastTitle">Done</strong>
+      <small id="toastText">Action completed successfully.</small>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="db.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
